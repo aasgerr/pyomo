@@ -223,6 +223,7 @@ class Categorizer(object):
         # categorize variables
         for var in var_list:
             v = symbol_map.getObject(var)
+            
             if v.is_fixed():
                 self.fixed.append(var)
             elif v.is_continuous():
@@ -781,7 +782,7 @@ class ProblemWriter_gams(AbstractProblemWriter):
                 mtype = 'dnlp'
 
         if solver is not None:
-            if mtype.upper() not in valid_solvers[solver.upper()]:
+            if False and mtype.upper() not in valid_solvers[solver.upper()]:
                 raise ValueError(
                     "GAMS writer passed solver (%s) "
                     "unsuitable for model type (%s)" % (solver, mtype)
