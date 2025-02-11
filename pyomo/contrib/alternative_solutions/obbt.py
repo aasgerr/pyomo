@@ -27,7 +27,7 @@ def obbt_analysis(
     abs_opt_gap=None,
     refine_discrete_bounds=False,
     warmstart=True,
-    solver="gurobi",
+    solver="gams:gurobi",
     solver_options={},
     tee=False,
 ):
