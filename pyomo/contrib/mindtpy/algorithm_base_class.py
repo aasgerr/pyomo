@@ -1,7 +1,7 @@
 #  ___________________________________________________________________________
 #
 #  Pyomo: Python Optimization Modeling Objects
-#  Copyright (c) 2008-2024
+#  Copyright (c) 2008-2025
 #  National Technology and Engineering Solutions of Sandia, LLC
 #  Under the terms of Contract DE-NA0003525 with National Technology and
 #  Engineering Solutions of Sandia, LLC, the U.S. Government retains certain
@@ -2795,8 +2795,9 @@ class _MindtPyAlgorithm(object):
             )
 
         self.create_utility_block(self.working_model, 'MindtPy_utils')
-        with time_code(self.timing, 'total', is_main_timer=True), lower_logger_level_to(
-            config.logger, new_logging_level
+        with (
+            time_code(self.timing, 'total', is_main_timer=True),
+            lower_logger_level_to(config.logger, new_logging_level),
         ):
             self._log_solver_intro_message()
             self.initialize_subsolvers()

@@ -1,7 +1,7 @@
 #  ___________________________________________________________________________
 #
 #  Pyomo: Python Optimization Modeling Objects
-#  Copyright (c) 2008-2024
+#  Copyright (c) 2008-2025
 #  National Technology and Engineering Solutions of Sandia, LLC
 #  Under the terms of Contract DE-NA0003525 with National Technology and
 #  Engineering Solutions of Sandia, LLC, the U.S. Government retains certain
@@ -1103,6 +1103,7 @@ with declare_modules_as_importable(globals()):
     networkx, networkx_available = attempt_import('networkx')
     numpy, numpy_available = attempt_import('numpy', callback=_finalize_numpy)
     pandas, pandas_available = attempt_import('pandas')
+    pathlib, pathlib_available = attempt_import('pathlib')
     pint, pint_available = attempt_import(
         'pint',
         # TypeError for pint<=0.24.3 and python>=3.13

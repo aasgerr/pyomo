@@ -1,7 +1,7 @@
 #  ___________________________________________________________________________
 #
 #  Pyomo: Python Optimization Modeling Objects
-#  Copyright (c) 2008-2024
+#  Copyright (c) 2008-2025
 #  National Technology and Engineering Solutions of Sandia, LLC
 #  Under the terms of Contract DE-NA0003525 with National Technology and
 #  Engineering Solutions of Sandia, LLC, the U.S. Government retains certain
@@ -1526,6 +1526,9 @@ class BlockVector(BaseBlockVector, np.ndarray):
         return True
 
     def __getitem__(self, item):
+        # numpy: __getitem__[()] is identity
+        if item.__class__ is tuple and not item:
+            return self
         if not self._has_equal_structure(item):
             raise ValueError(
                 'BlockVector.__getitem__ only accepts slices in the form of BlockVectors of the same structure'
