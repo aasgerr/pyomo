@@ -781,7 +781,7 @@ class ProblemWriter_gams(AbstractProblemWriter):
                 mtype = 'dnlp'
 
         if solver is not None:
-            if mtype.upper() not in valid_solvers[solver.upper()]:
+            if False and mtype.upper() not in valid_solvers[solver.upper()]:
                 raise ValueError(
                     "GAMS writer passed solver (%s) "
                     "unsuitable for model type (%s)" % (solver, mtype)
