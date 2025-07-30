@@ -27,6 +27,7 @@ def obbt_analysis(
     abs_opt_gap=None,
     refine_discrete_bounds=False,
     warmstart=True,
+    local_best_bounds=False,
     solver="gurobi",
     solver_options={},
     tee=False,
@@ -81,6 +82,7 @@ def obbt_analysis(
         abs_opt_gap=abs_opt_gap,
         refine_discrete_bounds=refine_discrete_bounds,
         warmstart=warmstart,
+        local_best_bounds=local_best_bounds,
         solver=solver,
         solver_options=solver_options,
         tee=tee,
@@ -96,6 +98,7 @@ def obbt_analysis_bounds_and_solutions(
     abs_opt_gap=None,
     refine_discrete_bounds=False,
     warmstart=True,
+    local_best_bounds=False,
     solver="gurobi",
     solver_options={},
     tee=False,
@@ -288,7 +291,15 @@ def obbt_analysis_bounds_and_solutions(
 
                 if warmstart:
                     _add_solution(solutions)
-                obj_val = pyo.value(var)
+                
+                if local_best_bounds:
+                    # Use the best bound if the problems are early stopped (e.g. time limit, node limit)
+                    if sense == pyo.minimize:
+                        obj_val = results.Problem[0].lower_bound
+                    else:
+                        obj_val = results.Problem[0].upper_bound
+                else:
+                    obj_val = pyo.value(var)
                 variable_bounds[var][idx] = obj_val
 
                 if refine_discrete_bounds and not var.is_continuous():
