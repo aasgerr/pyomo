@@ -157,6 +157,9 @@ def obbt_analysis_bounds_and_solutions(
         assert (
             variables == None
         ), "Cannot restrict variable list when warmstart is specified"
+
+    if local_best_bounds:
+        logger.warn("OBBT solves are limited to stop early, will use best bound instead of incumbent objective.")
     all_variables = aos_utils.get_model_variables(model, include_fixed=False)
     if variables == None:
         variable_list = all_variables
@@ -185,6 +188,8 @@ def obbt_analysis_bounds_and_solutions(
         optimal_tc = appsi.base.TerminationCondition.optimal
         infeas_or_unbdd_tc = appsi.base.TerminationCondition.infeasibleOrUnbounded
         unbdd_tc = appsi.base.TerminationCondition.unbounded
+        timelim_tc = appsi.base.TerminationCondition.maxTimeLimit
+        iterlim_tc = appsi.base.TerminationCondition.maxIterations
         use_appsi = True
     else:
         opt = pyo.SolverFactory(solver)
@@ -195,21 +200,30 @@ def obbt_analysis_bounds_and_solutions(
             results = opt.solve(
                 model, warmstart=warmstart, tee=tee, load_solutions=False
             )
-        except ValueError:
+        except TypeError:
             # An exception occurs if the solver does not recognize the warmstart option
-            results = opt.solve(model, tee=tee, load_solutions=False)
+            results = opt.solve(model, tee=tee, load_solutions=True)
         condition = results.solver.termination_condition
         optimal_tc = pyo.TerminationCondition.optimal
         infeas_or_unbdd_tc = pyo.TerminationCondition.infeasibleOrUnbounded
         unbdd_tc = pyo.TerminationCondition.unbounded
+        timelim_tc = pyo.TerminationCondition.maxTimeLimit
+        iterlim_tc = pyo.TerminationCondition.maxIterations
     logger.info("Performing initial solve of model.")
 
     if condition != optimal_tc:
-        raise RuntimeError(
-            ("OBBT cannot be applied, " "TerminationCondition = {}").format(
-                condition.value
+
+        if condition == timelim_tc or condition == iterlim_tc:
+            if not local_best_bounds:
+                local_best_bounds = True
+                logger.warn("OBBT solve early stopped, using best bound instead of incumbent objective.")
+                
+        else:
+            raise RuntimeError(
+                ("OBBT cannot be applied, " "TerminationCondition = {}").format(
+                    condition.value
+                )
             )
-        )
     if use_appsi:
         results.solution_loader.load_vars(solution_number=0)
     else:
