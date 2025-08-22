@@ -25,6 +25,7 @@ from operator import attrgetter, itemgetter
 from pyomo.common.dependencies import attempt_import
 from pyomo.common.collections import ComponentMap, ComponentSet
 from pyomo.common.config import ConfigDict, ConfigValue
+from pyomo.common.errors import ApplicationError, MouseTrap
 from pyomo.common.numeric_types import native_complex_types
 from pyomo.common.timing import HierarchicalTimer
 
@@ -32,6 +33,7 @@ from pyomo.common.timing import HierarchicalTimer
 from pyomo.contrib.cp.repn.docplex_writer import collect_valid_components
 from pyomo.contrib.solver.common.factory import SolverFactory
 from pyomo.contrib.solver.common.solution_loader import SolutionLoaderBase
+from pyomo.contrib.solver.common.util import NoSolutionError
 from pyomo.contrib.solver.solvers.gurobi_direct import GurobiDirect
 
 from pyomo.core.base import (
@@ -555,6 +557,22 @@ class GurobiMINLPSolutionLoader(SolutionLoaderBase):
             if pyo_var in vars_to_load:
                 pyo_var.set_value(grb_var.x, skip_validation=True)
         StaleFlagManager.mark_all_as_stale(delayed=True)
+    
+    def get_primals(self, vars_to_load=None, solution_number=0):
+        assert solution_number == 0
+        if self._grb_model.SolCount == 0:
+            raise NoSolutionError()
+
+        if vars_to_load:
+            vars_to_load = ComponentSet(vars_to_load)
+        else:
+            vars_to_load = ComponentSet(self._pyo_to_grb_var_map.keys())
+
+        primals = ComponentMap()
+        for pyo_var, grb_var in self._pyo_to_grb_var_map.items():
+            if pyo_var in vars_to_load:
+                primals[pyo_var] = grb_var.x
+        return primals
 
 
 # ESJ TODO: I just did the most convenient inheritance for the moment--if this is the
