@@ -158,8 +158,6 @@ def obbt_analysis_bounds_and_solutions(
             variables == None
         ), "Cannot restrict variable list when warmstart is specified"
 
-    if local_best_bounds:
-        logger.warn("OBBT solves are limited to stop early, will use best bound instead of incumbent objective.")
     all_variables = aos_utils.get_model_variables(model, include_fixed=False)
     if variables == None:
         variable_list = all_variables
@@ -190,6 +188,7 @@ def obbt_analysis_bounds_and_solutions(
         unbdd_tc = appsi.base.TerminationCondition.unbounded
         timelim_tc = appsi.base.TerminationCondition.maxTimeLimit
         iterlim_tc = appsi.base.TerminationCondition.maxIterations
+        nosol_tc = appsi.base.TerminationCondition.noSolution
         use_appsi = True
     else:
         opt = pyo.SolverFactory(solver)
@@ -202,18 +201,21 @@ def obbt_analysis_bounds_and_solutions(
             )
         except TypeError:
             # An exception occurs if the solver does not recognize the warmstart option
-            results = opt.solve(model, tee=tee, load_solutions=True)
+            results = opt.solve(model, tee=tee, load_solutions=False)
         condition = results.solver.termination_condition
         optimal_tc = pyo.TerminationCondition.optimal
         infeas_or_unbdd_tc = pyo.TerminationCondition.infeasibleOrUnbounded
         unbdd_tc = pyo.TerminationCondition.unbounded
         timelim_tc = pyo.TerminationCondition.maxTimeLimit
         iterlim_tc = pyo.TerminationCondition.maxIterations
+        nosol_tc = pyo.TerminationCondition.noSolution
     logger.info("Performing initial solve of model.")
+
+    early_stopping_conditions = [timelim_tc, iterlim_tc, nosol_tc]
 
     if condition != optimal_tc:
 
-        if condition == timelim_tc or condition == iterlim_tc:
+        if condition in early_stopping_conditions:
             if not local_best_bounds:
                 local_best_bounds = True
                 logger.warn("OBBT solve early stopped, using best bound instead of incumbent objective.")
@@ -270,6 +272,9 @@ def obbt_analysis_bounds_and_solutions(
         bound_dir = senses[idx][1]
 
         for var in variable_list:
+
+            original_bounds = (var.lb, var.ub)
+
             if idx == 0:
                 variable_bounds[var] = [None, None]
 
@@ -290,13 +295,14 @@ def obbt_analysis_bounds_and_solutions(
                     results = opt.solve(
                         model, warmstart=warmstart, tee=tee, load_solutions=False
                     )
-                except ValueError:
+                except TypeError:
                     # An exception occurs if the solver does not recognize the warmstart option
                     results = opt.solve(model, tee=tee, load_solutions=False)
                 condition = results.solver.termination_condition
             new_constraint = False
 
-            if condition == optimal_tc:
+            if condition in early_stopping_conditions + [optimal_tc]:
+
                 if use_appsi:
                     results.solution_loader.load_vars(solution_number=0)
                 else:
@@ -306,15 +312,15 @@ def obbt_analysis_bounds_and_solutions(
                 if warmstart:
                     _add_solution(solutions)
                 
-                if local_best_bounds:
+                if condition in early_stopping_conditions or local_best_bounds:
                     # Use the best bound if the problems are early stopped (e.g. time limit, node limit)
                     if sense == pyo.minimize:
-                        obj_val = results.Problem[0].lower_bound
+                        obj_val = max(results.Problem[0].lower_bound, original_bounds[0])
                     else:
-                        obj_val = results.Problem[0].upper_bound
+                        obj_val = min(results.Problem[0].upper_bound, original_bounds[1])
                 else:
                     obj_val = pyo.value(var)
-                variable_bounds[var][idx] = obj_val
+                variable_bounds[var][idx] = obj_val 
 
                 if refine_discrete_bounds and not var.is_continuous():
                     if sense == pyo.minimize and var.lb < obj_val:
