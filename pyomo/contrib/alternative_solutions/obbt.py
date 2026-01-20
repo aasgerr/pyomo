@@ -211,7 +211,7 @@ def obbt_analysis_bounds_and_solutions(
         nosol_tc = pyo.TerminationCondition.noSolution
     logger.info("Performing initial solve of model.")
 
-    early_stopping_conditions = [timelim_tc, iterlim_tc, nosol_tc]
+    early_stopping_conditions = [timelim_tc, iterlim_tc, nosol_tc, 'feasible']
 
     if condition != optimal_tc:
 
